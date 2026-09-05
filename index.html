@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunch Invoice</title>
+<style>
+  :root{--bg:#f6f7f9;--panel:#fff;--line:#e4e7ec;--text:#111827;--muted:#6b7280;--accent:#111827;--accent2:#2563eb;--ok:#16a34a;--warn:#d97706;--danger:#dc2626;--r:12px}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  button,input,select,textarea{font:inherit;color:inherit}
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent2);outline-offset:-1px}
+  textarea{resize:vertical;min-height:70px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+  .btn{padding:8px 14px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer}
+  .btn:hover{background:#f3f4f6}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#000}
+  .btn.danger{color:var(--danger)}
+  .btn.small{padding:4px 8px;font-size:13px}
+  .app{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
+  aside{background:var(--panel);border-right:1px solid var(--line);padding:20px;overflow:auto}
+  main{padding:28px;max-width:960px}
+  h1{font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  h1 span{display:inline-block;width:12px;height:12px;background:var(--accent2);border-radius:3px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:24px 0 8px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .stat{background:var(--bg);border-radius:var(--r);padding:12px}
+  .stat b{display:block;font-size:20px}
+  .stat small{color:var(--muted)}
+  .list{display:flex;flex-direction:column;gap:6px}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#fff}
+  .row:hover,.row.active{border-color:var(--accent2);box-shadow:0 0 0 2px #2563eb22}
+  .row .n{font-weight:600}
+  .row .c{color:var(--muted);font-size:13px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase}
+  .badge.draft{background:#f3f4f6;color:var(--muted)}
+  .badge.sent{background:#fef3c7;color:var(--warn)}
+  .badge.paid{background:#dcfce7;color:var(--ok)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px;margin-bottom:20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .toolbar .spacer{flex:1}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 6px;border-bottom:1px solid var(--line)}
+  td{padding:6px;vertical-align:middle}
+  td.num,th.num{text-align:right}
+  td input{padding:6px 8px}
+  .totals{margin-left:auto;width:320px;margin-top:14px}
+  .totals div{display:flex;justify-content:space-between;padding:6px 0}
+  .totals .grand{border-top:2px solid var(--text);font-weight:700;font-size:18px;margin-top:6px;padding-top:10px}
+  .empty{color:var(--muted);text-align:center;padding:60px 20px}
+  .modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .modal .card{width:100%;max-width:520px;margin:0}
+  .mobile-nav{display:none}
+  @media(max-width:860px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:16px}.grid2,.grid3{grid-template-columns:1fr}.totals{width:100%}}
+  /* print = the PDF */
+  #print{display:none}
+  @media print{
+    body{background:#fff}
+    .app,.modal{display:none!important}
+    #print{display:block;padding:40px;font-size:14px}
+    #print .head{display:flex;justify-content:space-between;margin-bottom:40px}
+    #print h1{font-size:32px;margin:0}
+    #print table{margin-top:24px}
+    #print th{border-bottom:2px solid #111}
+    #print td{padding:10px 6px;border-bottom:1px solid #e4e7ec}
+    #print .totals{width:300px}
+    #print .muted{color:#6b7280}
+    #print .paid-stamp{position:absolute;top:150px;right:60px;border:4px solid #16a34a;color:#16a34a;font-weight:800;font-size:28px;padding:6px 16px;transform:rotate(-12deg);letter-spacing:.1em}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1><span></span>Lunch Invoice</h1>
+    <div class="c" style="color:var(--muted);font-size:13px">Free. Local. No subscription.</div>
+    <div class="stats">
+      <div class="stat"><small>Outstanding</small><b id="statOut">$0.00</b></div>
+      <div class="stat"><small>Paid this year</small><b id="statPaid">$0.00</b></div>
+    </div>
+    <div class="toolbar" style="margin-top:16px">
+      <button class="btn primary" id="newInvoice">+ New invoice</button>
+      <button class="btn" id="editProfile">Business</button>
+      <button class="btn" id="editClients">Clients</button>
+    </div>
+    <h2>Invoices</h2>
+    <div class="list" id="invoiceList"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<div class="modal" id="profileModal"><div class="card">
+  <h2 style="margin-top:0">Your business</h2>
+  <label>Business name</label><input id="pName" placeholder="Your Business LLC">
+  <label>Address</label><textarea id="pAddress" placeholder="123 Main St&#10;Springfield, NY 12345"></textarea>
+  <label>Email</label><input id="pEmail" type="email" placeholder="hello@example.com">
+  <label>Payment instructions (shown on every invoice)</label><textarea id="pPay" placeholder="Pay by ACH to ... or Zelle ..."></textarea>
+  <label>Default tax rate %</label><input id="pTax" type="number" step="0.01" value="0">
+  <div class="toolbar" style="margin-top:16px"><span class="spacer"></span><button class="btn" data-close>Cancel</button><button class="btn primary" id="saveProfile">Save</button></div>
+</div></div>
+
+<div class="modal" id="clientsModal"><div class="card">
+  <h2 style="margin-top:0">Clients</h2>
+  <div class="list" id="clientList"></div>
+  <h2>Add / edit client</h2>
+  <input type="hidden" id="cId">
+  <label>Name</label><input id="cName" placeholder="Acme Co.">
+  <label>Email</label><input id="cEmail" type="email">
+  <label>Address</label><textarea id="cAddress"></textarea>
+  <div class="toolbar" style="margin-top:16px"><span class="spacer"></span><button class="btn" data-close>Close</button><button class="btn primary" id="saveClient">Save client</button></div>
+</div></div>
+
+<div id="print"></div>
+
+<script>
+// ---------- state ----------
+const KEY='lunch-invoice-v1';
+const blank={profile:{name:'',address:'',email:'',pay:'',tax:0},clients:[],invoices:[],seq:1};
+let db=load();
+let currentId=null;
+function load(){try{return Object.assign({},blank,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{return {...blank}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+const uid=()=>Math.random().toString(36).slice(2,10);
+const money=n=>'$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Local calendar date, not UTC: toISOString() would date evening invoices "tomorrow".
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const today=()=>iso(new Date());
+const plusDays=(d,n)=>{const [y,m,dd]=d.split('-').map(Number);const x=new Date(y,m-1,dd+n);return iso(x)};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clientOf=inv=>db.clients.find(c=>c.id===inv.clientId);
+function totals(inv){
+  const sub=inv.items.reduce((a,i)=>a+(Number(i.qty)||0)*(Number(i.rate)||0),0);
+  const tax=sub*(Number(inv.tax)||0)/100;
+  return {sub,tax,total:sub+tax};
+}
+
+// ---------- invoices ----------
+function newInvoice(){
+  const num='INV-'+String(db.seq++).padStart(4,'0');
+  const inv={id:uid(),number:num,clientId:db.clients[0]?.id||'',issued:today(),due:plusDays(today(),14),
+    items:[{description:'',qty:1,rate:0}],tax:db.profile.tax||0,notes:'',status:'draft'};
+  db.invoices.unshift(inv);save();currentId=inv.id;render();
+  setTimeout(()=>$('#main input[data-f="description"]')?.focus(),0);
+}
+function render(){renderSidebar();renderEditor()}
+function renderSidebar(){
+  const out=db.invoices.filter(i=>i.status==='sent').reduce((a,i)=>a+totals(i).total,0);
+  const yr=today().slice(0,4);
+  const paid=db.invoices.filter(i=>i.status==='paid'&&(i.paidOn||i.issued).startsWith(yr)).reduce((a,i)=>a+totals(i).total,0);
+  $('#statOut').textContent=money(out);$('#statPaid').textContent=money(paid);
+  $('#invoiceList').innerHTML=db.invoices.length?db.invoices.map(i=>`
+    <div class="row ${i.id===currentId?'active':''}" data-open="${i.id}">
+      <div><div class="n">${esc(i.number)}</div><div class="c">${esc(clientOf(i)?.name||'No client')} · ${money(totals(i).total)}</div></div>
+      <span class="badge ${i.status}">${i.status}</span>
+    </div>`).join(''):'<div class="c" style="color:var(--muted)">No invoices yet.</div>';
+}
+function renderEditor(){
+  const inv=db.invoices.find(i=>i.id===currentId);
+  const main=$('#main');
+  if(!inv){main.innerHTML=`<div class="empty"><h2 style="font-size:22px;color:var(--text);text-transform:none;letter-spacing:0">Pick an invoice or create one</h2><p>Set up your business and a client first, then hit <b>+ New invoice</b>.</p></div>`;return}
+  const t=totals(inv);
+  const clientOpts=['<option value="">— pick a client —</option>',...db.clients.map(c=>`<option value="${c.id}" ${c.id===inv.clientId?'selected':''}>${esc(c.name)}</option>`)].join('');
+  main.innerHTML=`
+  <div class="toolbar">
+    <h1 style="font-size:24px">${esc(inv.number)}</h1><span class="badge ${inv.status}">${inv.status}</span>
+    <span class="spacer"></span>
+    ${inv.status!=='paid'?`<button class="btn" data-act="sent">Mark sent</button><button class="btn" data-act="paid">Mark paid</button>`:`<button class="btn" data-act="sent">Reopen</button>`}
+    <button class="btn" data-act="dup">Duplicate</button>
+    <button class="btn primary" data-act="pdf">Download PDF</button>
+    <button class="btn danger" data-act="del">Delete</button>
+  </div>
+  <div class="card">
+    <div class="grid3">
+      <div><label>Client</label><select data-f="clientId">${clientOpts}</select></div>
+      <div><label>Issued</label><input type="date" data-f="issued" value="${inv.issued}"></div>
+      <div><label>Due</label><input type="date" data-f="due" value="${inv.due}"></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:55%">Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody>${inv.items.map((it,i)=>`<tr>
+        <td><input data-f="description" data-i="${i}" value="${esc(it.description)}" placeholder="What did you do?"></td>
+        <td><input type="number" step="any" data-f="qty" data-i="${i}" value="${it.qty}" style="text-align:right"></td>
+        <td><input type="number" step="any" data-f="rate" data-i="${i}" value="${it.rate}" style="text-align:right"></td>
+        <td class="num">${money((Number(it.qty)||0)*(Number(it.rate)||0))}</td>
+        <td><button class="btn small" data-rm="${i}" title="Remove line">✕</button></td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div class="toolbar" style="margin-top:10px"><button class="btn small" data-act="addline">+ Add line</button></div>
+    <div class="grid2">
+      <div><label>Notes</label><textarea data-f="notes">${esc(inv.notes)}</textarea></div>
+      <div class="totals">
+        <div><span>Subtotal</span><b>${money(t.sub)}</b></div>
+        <div><span>Tax <input type="number" step="0.01" data-f="tax" value="${inv.tax}" style="width:70px;display:inline-block;padding:2px 6px;margin:0 4px"> %</span><b>${money(t.tax)}</b></div>
+        <div class="grand"><span>Total</span><span>${money(t.total)}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------- events (delegated) ----------
+document.addEventListener('click',e=>{
+  const open=e.target.closest('[data-open]');if(open){currentId=open.dataset.open;render();return}
+  if(e.target.closest('[data-close]')){e.target.closest('.modal').classList.remove('open');return}
+  const rm=e.target.closest('[data-rm]');if(rm){const inv=cur();inv.items.splice(+rm.dataset.rm,1);if(!inv.items.length)inv.items.push({description:'',qty:1,rate:0});save();render();return}
+  const act=e.target.closest('[data-act]');if(!act)return;
+  const inv=cur();
+  switch(act.dataset.act){
+    case 'addline':inv.items.push({description:'',qty:1,rate:0});save();render();$('#main [data-f="description"][data-i="'+(inv.items.length-1)+'"]').focus();break;
+    case 'sent':inv.status='sent';delete inv.paidOn;save();render();break;
+    case 'paid':inv.status='paid';inv.paidOn=today();save();render();break;
+    case 'dup':{const copy=JSON.parse(JSON.stringify(inv));copy.id=uid();copy.number='INV-'+String(db.seq++).padStart(4,'0');copy.status='draft';copy.issued=today();copy.due=plusDays(today(),14);delete copy.paidOn;db.invoices.unshift(copy);save();currentId=copy.id;render();break}
+    case 'del':if(confirm('Delete '+inv.number+'?')){db.invoices=db.invoices.filter(i=>i.id!==inv.id);currentId=db.invoices[0]?.id||null;save();render()}break;
+    case 'pdf':printInvoice(inv);break;
+  }
+});
+document.addEventListener('input',e=>{
+  const f=e.target.dataset.f;if(!f||!e.target.closest('#main'))return;
+  const inv=cur();
+  if(e.target.dataset.i!==undefined){inv.items[+e.target.dataset.i][f]=e.target.value}
+  else inv[f]=e.target.value;
+  save();
+  // keep focus while typing: only re-render the numbers, not the inputs
+  if(['qty','rate','tax','clientId'].includes(f))softRender();
+  else renderSidebar();
+});
+function softRender(){
+  const inv=cur();const t=totals(inv);
+  document.querySelectorAll('#main tbody tr').forEach((tr,i)=>{const it=inv.items[i];tr.children[3].textContent=money((Number(it.qty)||0)*(Number(it.rate)||0))});
+  const tot=document.querySelectorAll('#main .totals b, #main .totals .grand span:last-child');
+  tot[0].textContent=money(t.sub);tot[1].textContent=money(t.tax);tot[2].textContent=money(t.total);
+  renderSidebar();
+}
+const cur=()=>db.invoices.find(i=>i.id===currentId);
+$('#newInvoice').onclick=newInvoice;
+
+// ---------- profile ----------
+$('#editProfile').onclick=()=>{const p=db.profile;$('#pName').value=p.name;$('#pAddress').value=p.address;$('#pEmail').value=p.email;$('#pPay').value=p.pay;$('#pTax').value=p.tax;$('#profileModal').classList.add('open');$('#pName').focus()};
+$('#saveProfile').onclick=()=>{db.profile={name:$('#pName').value,address:$('#pAddress').value,email:$('#pEmail').value,pay:$('#pPay').value,tax:Number($('#pTax').value)||0};save();$('#profileModal').classList.remove('open')};
+
+// ---------- clients ----------
+function renderClients(){$('#clientList').innerHTML=db.clients.length?db.clients.map(c=>`<div class="row" data-client="${c.id}"><div><div class="n">${esc(c.name)}</div><div class="c">${esc(c.email)}</div></div><button class="btn small danger" data-delclient="${c.id}">Delete</button></div>`).join(''):'<div class="c" style="color:var(--muted)">No clients yet.</div>'}
+$('#editClients').onclick=()=>{renderClients();$('#cId').value='';$('#cName').value='';$('#cEmail').value='';$('#cAddress').value='';$('#clientsModal').classList.add('open');$('#cName').focus()};
+$('#clientList').addEventListener('click',e=>{
+  const del=e.target.closest('[data-delclient]');if(del){db.clients=db.clients.filter(c=>c.id!==del.dataset.delclient);save();renderClients();render();return}
+  const row=e.target.closest('[data-client]');if(row){const c=db.clients.find(x=>x.id===row.dataset.client);$('#cId').value=c.id;$('#cName').value=c.name;$('#cEmail').value=c.email;$('#cAddress').value=c.address;$('#cName').focus()}
+});
+$('#saveClient').onclick=()=>{
+  const name=$('#cName').value.trim();if(!name)return $('#cName').focus();
+  const id=$('#cId').value||uid();
+  const c={id,name,email:$('#cEmail').value,address:$('#cAddress').value};
+  const i=db.clients.findIndex(x=>x.id===id);if(i>=0)db.clients[i]=c;else db.clients.push(c);
+  save();renderClients();render();$('#cId').value='';$('#cName').value='';$('#cEmail').value='';$('#cAddress').value='';$('#cName').focus();
+};
+
+// ---------- PDF (print) ----------
+function printInvoice(inv){
+  const p=db.profile,c=clientOf(inv),t=totals(inv);
+  const nl=s=>esc(s).replace(/\n/g,'<br>');
+  $('#print').innerHTML=`
+    ${inv.status==='paid'?'<div class="paid-stamp">PAID</div>':''}
+    <div class="head">
+      <div><h1>Invoice</h1><div class="muted">${esc(inv.number)}</div><div>Issued ${inv.issued}<br>Due ${inv.due}</div></div>
+      <div style="text-align:right"><b>${esc(p.name)||'Your business'}</b><br>${nl(p.address)}<br>${esc(p.email)}</div>
+    </div>
+    <div><span class="muted">Bill to</span><br><b>${esc(c?.name||'')}</b><br>${nl(c?.address||'')}<br>${esc(c?.email||'')}</div>
+    <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+    <tbody>${inv.items.map(it=>`<tr><td>${esc(it.description)}</td><td class="num">${it.qty}</td><td class="num">${money(it.rate)}</td><td class="num">${money((Number(it.qty)||0)*(Number(it.rate)||0))}</td></tr>`).join('')}</tbody></table>
+    <div class="totals"><div><span>Subtotal</span><b>${money(t.sub)}</b></div><div><span>Tax (${inv.tax}%)</span><b>${money(t.tax)}</b></div><div class="grand"><span>Total due</span><span>${money(t.total)}</span></div></div>
+    ${inv.notes?`<p><span class="muted">Notes</span><br>${nl(inv.notes)}</p>`:''}
+    ${p.pay?`<p><span class="muted">Payment</span><br>${nl(p.pay)}</p>`:''}`;
+  window.print();
+}
+
+// ---------- keyboard ----------
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newInvoice()}
+  if((e.metaKey||e.ctrlKey)&&e.key==='p'&&cur()){e.preventDefault();printInvoice(cur())}
+  if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
+});
+
+currentId=db.invoices[0]?.id||null;
+render();
+</script>
+</body>
+</html>
