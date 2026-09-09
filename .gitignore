@@ -1,3 +1,8 @@
 node_modules/
 test-results/
 .DS_Store
+
+# secrets and local config
+.env
+.env.*
+!.env.example
